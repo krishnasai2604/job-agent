@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JobAgent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #020617; --surface: #0f172a; --border: #1e293b;
+    --border2: #334155; --text: #e2e8f0; --muted: #64748b;
+    --blue: #38bdf8; --purple: #818cf8; --green: #34d399;
+    --yellow: #fbbf24; --red: #f87171;
+    --font: 'DM Sans', 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .animate { animation: fadeIn .3s ease; }
+
+  /* Header */
+  .header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(2,6,23,.97); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .logo-name { font-weight: 800; font-size: 15px; }
+  .logo-sub { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .pill {
+    font-size: 10px; font-family: var(--mono); padding: 3px 10px;
+    border-radius: 20px; border: 1px solid; white-space: nowrap;
+  }
+  .pill-green { background: #052e16; color: var(--green); border-color: #14532d; }
+  .pill-red   { background: #1a0505; color: var(--red);   border-color: #7f1d1d; }
+  .pill-gray  { background: var(--surface); color: var(--muted); border-color: var(--border); }
+
+  /* Steps */
+  .steps { display: flex; align-items: center; margin-bottom: 28px; }
+  .step { display: flex; flex-direction: column; align-items: center; }
+  .step-circle {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px; transition: all .3s;
+    background: var(--surface); color: var(--muted);
+    border: 2px solid var(--border2);
+  }
+  .step-circle.done  { background: var(--green); color: #0f172a; border-color: var(--green); }
+  .step-circle.active { background: var(--blue);  color: #0f172a; border-color: var(--blue); }
+  .step-label { font-size: 9px; margin-top: 4px; font-family: var(--mono); color: var(--muted); }
+  .step-label.done   { color: var(--green); }
+  .step-label.active { color: var(--blue); }
+  .step-line { flex: 1; height: 2px; margin: 0 4px; margin-bottom: 16px; background: var(--border); transition: background .3s; }
+  .step-line.done { background: var(--green); }
+
+  /* Layout */
+  .container { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border2); border-radius: 14px;
+    padding: 44px 20px; text-align: center; cursor: pointer;
+    background: rgba(15,23,42,.4); transition: all .2s;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--blue); background: rgba(56,189,248,.05); }
+  .upload-icon { font-size: 38px; margin-bottom: 10px; }
+  .upload-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .upload-sub { font-size: 12px; color: var(--muted); }
+
+  /* Profile card */
+  .profile-card {
+    background: rgba(56,189,248,.05); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 22px;
+  }
+  .profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 16px; color: #0f172a;
+  }
+  .profile-name { font-weight: 700; font-size: 14px; }
+  .profile-sub  { font-size: 12px; color: var(--muted); }
+  .skills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .skill-tag {
+    font-size: 10px; padding: 2px 9px; border-radius: 20px;
+    background: var(--surface); color: var(--blue); font-family: var(--mono);
+  }
+
+  /* Form */
+  label.field-label { font-size: 11px; color: var(--muted); font-family: var(--mono); display: block; margin-bottom: 5px; }
+  input.field {
+    width: 100%; padding: 11px 14px; border-radius: 9px; margin-bottom: 12px;
+    background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+    font-size: 14px; outline: none; font-family: var(--font);
+    transition: border-color .2s;
+  }
+  input.field:focus { border-color: var(--blue); }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%; padding: 13px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #0f172a; font-weight: 800; font-size: 14px; font-family: var(--font);
+    transition: opacity .2s;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-secondary {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-size: 11px; font-family: var(--font);
+  }
+
+  /* Job cards */
+  .job-card {
+    background: var(--surface); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 10px;
+    border: 1px solid var(--border); transition: border-color .2s;
+    animation: fadeIn .25s ease;
+  }
+  .job-card:hover { border-color: var(--border2); }
+  .job-card.applied { border-color: var(--green); }
+  .job-header { display: flex; gap: 12px; align-items: flex-start; }
+  .job-meta { flex: 1; min-width: 0; }
+  .job-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+  .tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: var(--mono);
+  }
+  .tag-source { background: #1e3a5f; color: #93c5fd; }
+  .tag-score-high   { background: #0a2e1a; color: var(--green); }
+  .tag-score-mid    { background: #2a1f06; color: var(--yellow); }
+  .tag-score-low    { background: var(--surface); color: var(--muted); }
+  .tag-applied { background: #052e16; color: var(--green); }
+  .job-title { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .job-company { font-size: 12px; color: var(--muted); }
+  .job-salary { font-size: 11px; color: var(--blue); margin-top: 3px; }
+  .job-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .btn-apply {
+    padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: #0f172a; font-weight: 800; font-size: 12px; font-family: var(--font);
+    white-space: nowrap;
+  }
+  .btn-details {
+    padding: 6px 10px; border-radius: 7px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 11px;
+  }
+  .job-detail { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .job-desc { font-size: 12px; color: #94a3b8; line-height: 1.7; margin-bottom: 8px; }
+  .job-reason { font-size: 11px; color: var(--green); font-family: var(--mono); margin-bottom: 8px; }
+  .job-link { font-size: 11px; color: var(--blue); }
+  .job-posted { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* Spinner */
+  .spinner-wrap { text-align: center; padding: 52px 0; }
+  .spinner {
+    width: 42px; height: 42px; margin: 0 auto 16px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--blue);
+    animation: spin .75s linear infinite;
+  }
+  .spinner-label { color: var(--blue); font-family: var(--mono); font-size: 13px; }
+
+  /* Cover letter modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 16px;
+    width: 100%; max-width: 560px; padding: 24px; max-height: 88vh; overflow-y: auto;
+    animation: fadeIn .2s ease;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .modal-title { font-weight: 800; font-size: 17px; }
+  .modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .btn-close {
+    background: transparent; border: 1px solid var(--border2); border-radius: 7px;
+    color: var(--muted); padding: 5px 10px; cursor: pointer; font-size: 12px;
+  }
+  .letter-text {
+    background: #1e293b; border-radius: 8px; padding: 16px;
+    font-size: 13px; color: var(--text); line-height: 1.8;
+    font-family: Georgia, serif; white-space: pre-wrap;
+  }
+  textarea.letter-edit {
+    width: 100%; min-height: 260px; background: #1e293b;
+    border: 1px solid var(--blue); border-radius: 8px;
+    padding: 14px; color: var(--text); font-size: 13px; line-height: 1.75;
+    font-family: Georgia, serif; resize: vertical; outline: none;
+  }
+  .modal-footer { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+  .btn-edit {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border2);
+    background: transparent; color: #94a3b8; cursor: pointer; font-size: 13px;
+  }
+  .btn-submit {
+    padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    color: #0f172a; font-weight: 800; font-size: 13px;
+  }
+
+  /* Activity log */
+  .log { margin-top: 24px; background: #020617; border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .log-title { font-size: 10px; color: #334155; font-family: var(--mono); margin-bottom: 8px; letter-spacing: .08em; }
+  .log-entry { font-size: 11px; font-family: var(--mono); line-height: 1.6; color: #334155; }
+  .log-entry:first-child { color: #94a3b8; }
+
+  /* Error */
+  .err { margin-top: 12px; color: var(--red); font-size: 12px; font-family: var(--mono); }
+  .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .results-title { font-weight: 800; font-size: 18px; margin-bottom: 2px; }
+  .results-sub { font-size: 11px; color: var(--muted); }
+  h2 { font-size: 22px; font-weight: 800; letter-spacing: -.03em; margin-bottom: 6px; }
+  p.subtitle { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+
+  /* Server setup banner */
+  .setup-banner {
+    background: #1a1005; border: 1px solid #78350f; border-radius: 12px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .setup-banner h3 { font-size: 14px; color: var(--yellow); margin-bottom: 8px; }
+  .setup-banner pre { font-size: 11px; color: #fde68a; font-family: var(--mono); line-height: 1.8; background: rgba(0,0,0,.3); padding: 10px; border-radius: 6px; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-name">JobAgent</div>
+      <div class="logo-sub">Real · Indeed + Dice · AI</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="serverPill" class="pill pill-gray">connecting…</span>
+    <span id="appliedPill" class="pill pill-green" style="display:none">0 applied ✓</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="steps" id="stepBar"></div>
+
+  <!-- SETUP BANNER (shown when server offline) -->
+  <div class="setup-banner" id="setupBanner" style="display:none">
+    <h3>⚙️ Start the backend server first</h3>
+    <pre>cd job-agent-real
+npm install
+ANTHROPIC_API_KEY=your_key node server.js</pre>
+    <div style="font-size:11px;color:#fde68a;margin-top:8px">Then refresh this page. Server runs at <strong>localhost:3001</strong>.</div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div id="stageUpload">
+    <h2>Drop your resume, we handle the rest</h2>
+    <p class="subtitle">Upload PDF → AI parses profile → real Indeed + Dice search → tailored cover letters</p>
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Drag & drop your resume PDF</div>
+      <div class="upload-sub">or click to browse</div>
+      <input type="file" id="fileInput" accept="application/pdf" style="display:none"/>
+    </div>
+    <div class="err" id="uploadErr"></div>
+  </div>
+
+  <!-- PARSING SPINNER -->
+  <div id="stageParsing" style="display:none">
+    <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-label" id="parseLabel">Parsing resume…</div></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="stageSearch" style="display:none">
+    <div class="profile-card" id="profileCard"></div>
+    <label class="field-label">JOB TITLE / KEYWORDS</label>
+    <input class="field" id="queryInput" placeholder="Full Stack Engineer, Software Engineer…"/>
+    <label class="field-label">LOCATION (leave blank for remote)</label>
+    <input class="field" id="locationInput" placeholder="Chicago, IL · New York · Remote…" style="margin-bottom:18px"/>
+    <button class="btn-primary" id="searchBtn">🔍 Search Indeed + Dice</button>
+  </div>
+
+  <!-- SEARCHING SPINNER -->
+  <div id="stageSearching" style="display:none">
+    <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-label">Searching Indeed + Dice…</div></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="stageResults" style="display:none">
+    <div class="results-header">
+      <div>
+        <div class="results-title" id="resultsTitle">0 Jobs Found</div>
+        <div class="results-sub" id="resultsSub">Sorted by AI match</div>
+      </div>
+      <button class="btn-secondary" id="searchAgainBtn">← Search again</button>
+    </div>
+    <div id="jobList"></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log" id="logPanel" style="display:none">
+    <div class="log-title">ACTIVITY LOG</div>
+    <div id="logEntries"></div>
+  </div>
+</div>
+
+<!-- COVER LETTER MODAL -->
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Cover Letter</div>
+        <div class="modal-sub" id="modalSub"></div>
+      </div>
+      <button class="btn-close" id="modalClose">✕ Close</button>
+    </div>
+    <div id="modalBody">
+      <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-label">Writing cover letter…</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "http://localhost:3001";
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  stage: "upload",
+  resumeText: "",
+  profile: null,
+  jobs: [],
+  applied: new Set(),
+  currentJob: null,
+  currentLetter: "",
+  editing: false,
+  serverOnline: false,
+};
+
+// ── Logging ───────────────────────────────────────────────────────────────────
+function log(msg) {
+  console.log(msg);
+  const panel = document.getElementById("logPanel");
+  const entries = document.getElementById("logEntries");
+  panel.style.display = "block";
+  const div = document.createElement("div");
+  div.className = "log-entry";
+  div.textContent = msg;
+  entries.prepend(div);
+  // Keep max 30
+  while (entries.children.length > 30) entries.removeChild(entries.lastChild);
+}
+
+// ── Steps ─────────────────────────────────────────────────────────────────────
+const STEPS = ["upload","search","results","applying","done"];
+const STEP_LABELS = {upload:"Upload",search:"Search",results:"Matches",applying:"Apply",done:"Done"};
+const STAGE_MAP = {parsing:"search", searching:"results"};
+
+function renderSteps() {
+  const bar = document.getElementById("stepBar");
+  const eff = STAGE_MAP[state.stage] || state.stage;
+  const cur = STEPS.indexOf(eff);
+  bar.innerHTML = STEPS.map((s, i) => {
+    const done = i < cur, active = i === cur;
+    const lineClass = done ? "step-line done" : "step-line";
+    const circleClass = done ? "step-circle done" : active ? "step-circle active" : "step-circle";
+    const labelClass = done ? "step-label done" : active ? "step-label active" : "step-label";
+    const line = i < STEPS.length-1 ? `<div class="${lineClass}"></div>` : "";
+    return `<div class="step">
+      <div class="${circleClass}">${done?"✓":i+1}</div>
+      <span class="${labelClass}">${STEP_LABELS[s]}</span>
+    </div>${line}`;
+  }).join("");
+}
+
+// ── Stage visibility ──────────────────────────────────────────────────────────
+const STAGE_IDS = ["stageUpload","stageParsing","stageSearch","stageSearching","stageResults"];
+
+function showStage(id) {
+  STAGE_IDS.forEach(s => document.getElementById(s).style.display = "none");
+  document.getElementById(id)?.style.setProperty("display","block");
+  renderSteps();
+}
+
+function setStage(s) {
+  state.stage = s;
+  const map = {
+    upload:"stageUpload", parsing:"stageParsing",
+    search:"stageSearch", searching:"stageSearching", results:"stageResults",
+  };
+  showStage(map[s] || "stageUpload");
+}
+
+// ── Server health check ───────────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const res = await fetch(`${API}/health`);
+    const data = await res.json();
+    state.serverOnline = true;
+    const pill = document.getElementById("serverPill");
+    pill.className = "pill pill-green";
+    pill.textContent = data.serpapi ? "Server + SerpAPI ✓" : "Server ✓ (mock jobs)";
+    document.getElementById("setupBanner").style.display = "none";
+    log("✅ Server connected" + (data.serpapi ? " — real job search active" : " — using mock jobs (add SERPAPI_KEY for real results)"));
+  } catch {
+    state.serverOnline = false;
+    const pill = document.getElementById("serverPill");
+    pill.className = "pill pill-red";
+    pill.textContent = "Server offline";
+    document.getElementById("setupBanner").style.display = "block";
+    log("❌ Server not running — follow setup instructions above");
+  }
+}
+
+// ── File upload ───────────────────────────────────────────────────────────────
+document.getElementById("uploadZone").addEventListener("click", () => document.getElementById("fileInput").click());
+document.getElementById("fileInput").addEventListener("change", e => handleFile(e.target.files[0]));
+
+const zone = document.getElementById("uploadZone");
+zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
+zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
+zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("drag"); handleFile(e.dataTransfer.files[0]); });
+
+async function handleFile(file) {
+  if (!file) return;
+  if (file.type !== "application/pdf") { document.getElementById("uploadErr").textContent = "⚠ Please upload a PDF file."; return; }
+  document.getElementById("uploadErr").textContent = "";
+
+  if (!state.serverOnline) {
+    document.getElementById("uploadErr").textContent = "⚠ Start the backend server first (see instructions above).";
+    return;
+  }
+
+  setStage("parsing");
+  document.getElementById("parseLabel").textContent = `Parsing ${file.name}…`;
+  log(`📄 Uploading ${file.name} (${(file.size/1024).toFixed(0)}kb)…`);
+
+  const form = new FormData();
+  form.append("resume", file);
+
+  try {
+    const res = await fetch(`${API}/parse-resume`, { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Parse failed");
+
+    state.profile = data.profile;
+    state.resumeText = data.resumeText;
+    log(`✅ Profile: ${data.profile.name} · ${data.profile.title}`);
+    renderProfile();
+    document.getElementById("queryInput").value = data.profile.title || "Software Engineer";
+    document.getElementById("locationInput").value = data.profile.location || "";
+    setStage("search");
+  } catch(e) {
+    log("❌ Parse error: " + e.message);
+    setStage("upload");
+    document.getElementById("uploadErr").textContent = "⚠ " + e.message;
+  }
+}
+
+function renderProfile() {
+  const p = state.profile;
+  const initial = (p.name?.[0] || "?").toUpperCase();
+  const skillsHtml = (p.skills||[]).slice(0,10).map(s=>`<span class="skill-tag">${s}</span>`).join("");
+  document.getElementById("profileCard").innerHTML = `
+    <div class="profile-header">
+      <div class="avatar">${initial}</div>
+      <div>
+        <div class="profile-name">${p.name||"Candidate"}</div>
+        <div class="profile-sub">${[p.title,p.location].filter(Boolean).join(" · ")}</div>
+      </div>
+    </div>
+    ${skillsHtml ? `<div class="skills">${skillsHtml}</div>` : ""}
+  `;
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+document.getElementById("searchBtn").addEventListener("click", doSearch);
+document.getElementById("queryInput").addEventListener("keydown", e => e.key==="Enter" && doSearch());
+document.getElementById("locationInput").addEventListener("keydown", e => e.key==="Enter" && doSearch());
+document.getElementById("searchAgainBtn").addEventListener("click", () => setStage("search"));
+
+async function doSearch() {
+  const query = document.getElementById("queryInput").value.trim();
+  const location = document.getElementById("locationInput").value.trim();
+  if (!query) return;
+
+  setStage("searching");
+  log(`🔍 Searching "${query}"${location?" in "+location:" remote"}…`);
+
+  try {
+    const res = await fetch(`${API}/search-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, location, profile: state.profile, resumeText: state.resumeText }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Search failed");
+
+    state.jobs = data.jobs;
+    log(`🏁 ${data.jobs.length} jobs found and scored`);
+    renderResults(query);
+    setStage("results");
+  } catch(e) {
+    log("❌ Search error: " + e.message);
+    setStage("search");
+  }
+}
+
+function renderResults(query) {
+  const count = state.jobs.length;
+  document.getElementById("resultsTitle").textContent = `${count} Jobs Found`;
+  document.getElementById("resultsSub").textContent = `Sorted by AI match · ${state.applied.size} applied`;
+
+  const list = document.getElementById("jobList");
+  list.innerHTML = "";
+
+  if (!count) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:8px">🔍</div>No jobs found. Try different keywords.</div>`;
+    return;
+  }
+
+  state.jobs.forEach(job => list.appendChild(makeJobCard(job)));
+}
+
+function makeJobCard(job) {
+  const score = job.matchScore ?? 75;
+  const scoreClass = score>=80?"tag-score-high":score>=60?"tag-score-mid":"tag-score-low";
+  const isApplied = state.applied.has(job.id);
+
+  const card = document.createElement("div");
+  card.className = "job-card animate" + (isApplied?" applied":"");
+  card.id = `card-${job.id}`;
+
+  card.innerHTML = `
+    <div class="job-header">
+      <div class="job-meta">
+        <div class="job-tags">
+          <span class="tag tag-source">${job.source||"Web"}</span>
+          <span class="tag ${scoreClass}">${score}% match</span>
+          ${isApplied?`<span class="tag tag-applied">✓ Applied</span>`:""}
+        </div>
+        <div class="job-title">${job.title}</div>
+        <div class="job-company">${[job.company,job.location].filter(Boolean).join(" · ")}</div>
+        ${job.salary?`<div class="job-salary">${job.salary}</div>`:""}
+      </div>
+      <div class="job-actions">
+        ${!isApplied?`<button class="btn-apply" onclick="startApply('${job.id}')">Apply →</button>`:""}
+        <button class="btn-details" onclick="toggleDetail('${job.id}')">Details</button>
+      </div>
+    </div>
+    <div class="job-detail" id="detail-${job.id}" style="display:none">
+      ${job.matchReason?`<div class="job-reason">💡 ${job.matchReason}</div>`:""}
+      <div class="job-desc">${job.description||"No description available."}</div>
+      ${job.postedAt?`<div class="job-posted">Posted: ${job.postedAt}</div>`:""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <a class="job-link" href="https://www.indeed.com/jobs?q=${encodeURIComponent(job.title+' '+job.company)}&l=${encodeURIComponent(job.location||'')}" target="_blank" rel="noreferrer" style="background:#1e3a5f;padding:5px 12px;border-radius:6px;font-size:11px;color:#93c5fd;text-decoration:none">🔍 Search on Indeed ↗</a>
+        <a class="job-link" href="https://www.dice.com/jobs?q=${encodeURIComponent(job.title+' '+job.company)}" target="_blank" rel="noreferrer" style="background:#2d1b69;padding:5px 12px;border-radius:6px;font-size:11px;color:#c4b5fd;text-decoration:none">🎲 Search on Dice ↗</a>
+        <a class="job-link" href="https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(job.title+' '+job.company)}" target="_blank" rel="noreferrer" style="background:#0a2540;padding:5px 12px;border-radius:6px;font-size:11px;color:#60a5fa;text-decoration:none">💼 Search on LinkedIn ↗</a>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function toggleDetail(id) {
+  const d = document.getElementById(`detail-${id}`);
+  d.style.display = d.style.display==="none" ? "block" : "none";
+}
+
+// ── Apply ─────────────────────────────────────────────────────────────────────
+async function startApply(jobId) {
+  const job = state.jobs.find(j => j.id === jobId);
+  if (!job) return;
+  state.currentJob = job;
+
+  document.getElementById("modalSub").textContent = `${job.title} @ ${job.company}`;
+  document.getElementById("modalBody").innerHTML = `<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-label">Writing cover letter…</div></div>`;
+  document.getElementById("modalOverlay").style.display = "flex";
+  state.editing = false;
+
+  try {
+    const res = await fetch(`${API}/cover-letter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job, resumeText: state.resumeText, profile: state.profile }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    state.currentLetter = data.letter;
+    renderLetter(data.letter);
+    log(`✍️ Cover letter ready for ${job.title} @ ${job.company}`);
+  } catch(e) {
+    log("❌ Cover letter error: " + e.message);
+    document.getElementById("modalBody").innerHTML = `<div class="err">${e.message}</div>`;
+  }
+}
+
+function renderLetter(letter) {
+  document.getElementById("modalBody").innerHTML = `
+    <div id="letterDisplay" class="letter-text">${letter.replace(/</g,"&lt;")}</div>
+    <div class="modal-footer">
+      <button class="btn-edit" onclick="toggleEdit()">Edit</button>
+      <button class="btn-submit" onclick="confirmApply()">Submit Application →</button>
+    </div>
+  `;
+}
+
+function toggleEdit() {
+  state.editing = !state.editing;
+  const display = document.getElementById("letterDisplay");
+  if (!display) return;
+  if (state.editing) {
+    document.getElementById("modalBody").innerHTML = `
+      <textarea class="letter-edit" id="letterEditArea">${state.currentLetter}</textarea>
+      <div class="modal-footer">
+        <button class="btn-edit" onclick="toggleEdit()">Preview</button>
+        <button class="btn-submit" onclick="confirmApply()">Submit Application →</button>
+      </div>
+    `;
+  } else {
+    const edited = document.getElementById("letterEditArea")?.value || state.currentLetter;
+    state.currentLetter = edited;
+    renderLetter(edited);
+  }
+}
+
+async function confirmApply() {
+  const edited = document.getElementById("letterEditArea")?.value;
+  if (edited) state.currentLetter = edited;
+
+  const job = state.currentJob;
+  state.applied.add(job.id);
+
+  // Update card
+  const card = document.getElementById(`card-${job.id}`);
+  if (card) {
+    card.classList.add("applied");
+    card.querySelector(".btn-apply")?.remove();
+    const tags = card.querySelector(".job-tags");
+    if (tags && !tags.querySelector(".tag-applied")) {
+      const t = document.createElement("span");
+      t.className = "tag tag-applied";
+      t.textContent = "✓ Applied";
+      tags.appendChild(t);
+    }
+  }
+
+  // Update applied count
+  const n = state.applied.size;
+  const pill = document.getElementById("appliedPill");
+  pill.style.display = "inline";
+  pill.textContent = `${n} applied ✓`;
+  document.getElementById("resultsSub").textContent = `Sorted by AI match · ${n} applied`;
+
+  log(`📨 Applied: ${job.title} @ ${job.company}`);
+  document.getElementById("modalOverlay").style.display = "none";
+
+  // Open exact Indeed + Dice search for this job
+  const indeedUrl = "https://www.indeed.com/jobs?q=" + encodeURIComponent(job.title + " " + job.company) + "&l=" + encodeURIComponent(job.location || "");
+  const diceUrl = "https://www.dice.com/jobs?q=" + encodeURIComponent(job.title + " " + job.company);
+  setTimeout(function() { window.open(indeedUrl, "_blank"); }, 300);
+  setTimeout(function() { window.open(diceUrl, "_blank"); }, 800);
+  log("🔗 Opened Indeed search for: " + job.title + " at " + job.company);
+  log("🔗 Opened Dice search for: " + job.title + " at " + job.company);
+}
+
+document.getElementById("modalClose").addEventListener("click", () => {
+  document.getElementById("modalOverlay").style.display = "none";
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+setStage("upload");
+checkServer();
+// Recheck every 5s until online
+const serverCheck = setInterval(async () => {
+  if (!state.serverOnline) { await checkServer(); }
+  else clearInterval(serverCheck);
+}, 5000);
+</script>
+</body>
+</html>

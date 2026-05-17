@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JobAgent Setup Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--surface:#0e1119;--card:#131720;--border:#1e2535;--border2:#2a3349;
+  --text:#e8ecf4;--muted:#5a6480;--dim:#3a4460;
+  --blue:#4fc3f7;--purple:#9c8cfc;--green:#43e097;--yellow:#ffd166;--red:#ff6b6b;--orange:#ff9a3c;
+  --mono:'DM Mono',monospace;--sans:'Manrope',sans-serif;--display:'Syne',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+/* Background grid */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(79,195,247,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+/* Header */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(7,8,15,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo-badge{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.header-title{font-family:var(--display);font-size:17px;font-weight:800}
+.header-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.progress-wrap{display:flex;align-items:center;gap:10px}
+.progress-text{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.progress-bar{width:120px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:2px;transition:width .5s ease;width:0%}
+
+/* Hero */
+.hero{
+  position:relative;z-index:1;text-align:center;
+  padding:60px 24px 40px;
+}
+.hero-tag{
+  display:inline-block;font-size:11px;font-family:var(--mono);
+  padding:4px 14px;border-radius:20px;margin-bottom:20px;
+  background:rgba(79,195,247,.08);color:var(--blue);border:1px solid rgba(79,195,247,.2);
+}
+.hero-title{
+  font-family:var(--display);font-size:clamp(28px,6vw,42px);font-weight:800;
+  line-height:1.1;margin-bottom:12px;
+  background:linear-gradient(135deg,var(--text) 0%,var(--blue) 60%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:14px;color:var(--muted);max-width:480px;margin:0 auto 32px;line-height:1.6}
+.estimated{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--muted);font-family:var(--mono);
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Steps nav */
+.steps-nav{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;padding:0 24px 40px;position:relative;z-index:1;
+  flex-wrap:wrap;row-gap:12px;
+}
+.step-nav-item{display:flex;align-items:center;gap:0;cursor:pointer}
+.step-dot{
+  width:32px;height:32px;border-radius:50%;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:var(--mono);color:var(--muted);
+  transition:all .3s;background:var(--card);flex-shrink:0;
+}
+.step-dot.done{background:var(--green);border-color:var(--green);color:#07080f}
+.step-dot.active{background:var(--blue);border-color:var(--blue);color:#07080f;box-shadow:0 0 16px rgba(79,195,247,.4)}
+.step-connector{width:32px;height:2px;background:var(--border);transition:background .3s;flex-shrink:0}
+.step-connector.done{background:var(--green)}
+
+/* Main content */
+.content{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 16px 80px}
+
+/* Step card */
+.step-card{
+  display:none;background:var(--card);border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;animation:slideIn .35s ease;
+}
+.step-card.active{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+.step-card-header{
+  padding:28px 28px 0;
+  display:flex;align-items:flex-start;gap:16px;
+}
+.step-number-badge{
+  width:48px;height:48px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-size:20px;font-weight:800;
+}
+.step-card-title{
+  font-family:var(--display);font-size:22px;font-weight:800;margin-bottom:4px;
+}
+.step-card-sub{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* Visual mockup area */
+.mockup{
+  margin:24px 28px;border-radius:14px;overflow:hidden;
+  border:1px solid var(--border2);position:relative;
+}
+.mockup-bar{
+  background:#1a1f2e;padding:10px 16px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.mockup-dot{width:10px;height:10px;border-radius:50%}
+.mockup-url{flex:1;background:var(--surface);border-radius:6px;padding:4px 12px;font-size:11px;color:var(--muted);font-family:var(--mono);margin:0 12px}
+.mockup-body{background:var(--bg);padding:20px;min-height:140px}
+
+/* Terminal */
+.terminal{
+  margin:0 28px 20px;border-radius:14px;overflow:hidden;
+  border:1px solid var(--border2);
+}
+.terminal-bar{
+  background:#1a1f2e;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+.terminal-dots{display:flex;gap:6px}
+.terminal-title{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.terminal-body{background:#0a0d14;padding:16px 20px;font-family:var(--mono);font-size:13px;line-height:1.8}
+.t-prompt{color:var(--green)}
+.t-cmd{color:var(--blue)}
+.t-out{color:var(--muted)}
+.t-success{color:var(--green)}
+.t-warn{color:var(--yellow)}
+.t-cursor{display:inline-block;width:8px;height:14px;background:var(--blue);animation:blink 1s infinite;vertical-align:middle;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Copy command box */
+.cmd-box{
+  margin:0 28px 20px;background:#0a0d14;border:1px solid var(--border2);
+  border-radius:12px;padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  transition:border-color .2s;
+}
+.cmd-box:hover{border-color:var(--blue)}
+.cmd-text{font-family:var(--mono);font-size:14px;color:var(--blue);flex:1;word-break:break-all}
+.copy-btn{
+  background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.2);
+  color:var(--blue);padding:6px 14px;border-radius:8px;
+  font-size:11px;font-family:var(--mono);cursor:pointer;
+  white-space:nowrap;transition:all .2s;flex-shrink:0;
+}
+.copy-btn:hover{background:rgba(79,195,247,.2)}
+.copy-btn.copied{background:rgba(67,224,151,.1);border-color:rgba(67,224,151,.2);color:var(--green)}
+
+/* Instructions list */
+.instructions{padding:0 28px 8px}
+.instruction{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.instruction:last-child{border-bottom:none}
+.inst-num{
+  width:26px;height:26px;border-radius:8px;flex-shrink:0;
+  background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:var(--mono);color:var(--blue);
+}
+.inst-content{flex:1}
+.inst-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.inst-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.inst-code{
+  display:inline-block;margin-top:6px;
+  background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.12);
+  padding:3px 10px;border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--blue);
+}
+
+/* Tip box */
+.tip{
+  margin:0 28px 20px;padding:14px 16px;border-radius:12px;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.tip-info{background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.15)}
+.tip-warn{background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.15)}
+.tip-success{background:rgba(67,224,151,.06);border:1px solid rgba(67,224,151,.15)}
+.tip-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.tip-text{font-size:12px;line-height:1.6;color:var(--muted)}
+.tip-text strong{color:var(--text)}
+
+/* OS tabs */
+.os-tabs{display:flex;gap:8px;margin:0 28px 16px}
+.os-tab{
+  padding:7px 16px;border-radius:8px;border:1px solid var(--border2);
+  font-size:12px;font-family:var(--mono);cursor:pointer;color:var(--muted);
+  transition:all .2s;background:transparent;
+}
+.os-tab.active{background:rgba(79,195,247,.1);border-color:rgba(79,195,247,.3);color:var(--blue)}
+.os-content{display:none}
+.os-content.active{display:block}
+
+/* File editor mockup */
+.file-editor{
+  margin:0 28px 20px;border-radius:12px;overflow:hidden;
+  border:1px solid var(--border2);
+}
+.file-tab{
+  background:#1a1f2e;padding:8px 16px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+  font-size:11px;font-family:var(--mono);color:var(--muted);
+}
+.file-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow)}
+.file-body{background:#090c14;padding:16px 20px;font-family:var(--mono);font-size:13px;line-height:1.9}
+.f-comment{color:var(--dim)}
+.f-key{color:var(--purple)}
+.f-val{color:var(--green)}
+.f-val-empty{color:var(--red)}
+.f-highlight{background:rgba(67,224,151,.08);border-radius:4px;padding:0 4px}
+
+/* Checklist */
+.checklist{padding:0 28px 8px}
+.check-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.check-item:last-child{border-bottom:none}
+.check-box{
+  width:22px;height:22px;border-radius:6px;flex-shrink:0;
+  border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-size:12px;
+}
+.check-item.checked .check-box{background:var(--green);border-color:var(--green);color:#07080f}
+.check-label{font-size:13px;transition:color .2s}
+.check-item.checked .check-label{color:var(--muted);text-decoration:line-through}
+
+/* Success state */
+.success-screen{
+  text-align:center;padding:40px 28px;
+}
+.success-icon{font-size:56px;margin-bottom:16px;animation:bounce .6s ease}
+@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.success-title{font-family:var(--display);font-size:26px;font-weight:800;margin-bottom:8px;color:var(--green)}
+.success-sub{font-size:14px;color:var(--muted);max-width:380px;margin:0 auto 24px}
+
+/* Navigation buttons */
+.nav-btns{
+  display:flex;gap:12px;padding:20px 28px 28px;
+  border-top:1px solid var(--border);justify-content:space-between;align-items:center;
+}
+.btn-prev{
+  padding:10px 20px;border-radius:10px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);font-size:13px;cursor:pointer;
+  font-family:var(--sans);transition:all .2s;
+}
+.btn-prev:hover{border-color:var(--blue);color:var(--blue)}
+.btn-next{
+  padding:10px 24px;border-radius:10px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  color:#07080f;font-weight:700;font-size:13px;font-family:var(--sans);
+  display:flex;align-items:center;gap:8px;transition:opacity .2s;
+}
+.btn-next:hover{opacity:.9}
+.step-indicator{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* App preview mockup */
+.app-mockup{
+  margin:0 28px 20px;border-radius:14px;overflow:hidden;
+  border:1px solid var(--border2);background:var(--bg);
+}
+.app-header-mock{
+  background:rgba(14,17,25,.95);border-bottom:1px solid var(--border);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+.app-logo-mock{display:flex;align-items:center;gap:8px}
+.app-badge-mock{
+  width:28px;height:28px;border-radius:7px;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.app-name-mock{font-family:var(--display);font-size:13px;font-weight:800}
+.server-pill-mock{
+  font-size:10px;font-family:var(--mono);padding:3px 10px;
+  border-radius:20px;background:#052e16;color:var(--green);border:1px solid #14532d;
+}
+.app-body-mock{padding:20px 16px}
+.upload-mock{
+  border:2px dashed var(--border2);border-radius:12px;
+  padding:28px;text-align:center;
+}
+.upload-mock-icon{font-size:28px;margin-bottom:8px}
+.upload-mock-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.upload-mock-sub{font-size:11px;color:var(--muted)}
+
+/* Responsive */
+@media(max-width:600px){
+  .step-card-header{flex-direction:column;gap:10px}
+  .steps-nav{gap:0}
+  .step-connector{width:20px}
+  .cmd-box{flex-direction:column;align-items:flex-start}
+  .progress-bar{width:80px}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-badge">⚡</div>
+    <div>
+      <div class="header-title">JobAgent Setup</div>
+      <div class="header-sub">Interactive Guide</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <span class="progress-text" id="progressText">Step 1 of 8</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">🚀 Step-by-Step Visual Guide</div>
+  <h1 class="hero-title">Set Up JobAgent<br/>in 8 Easy Steps</h1>
+  <p class="hero-sub">Follow along, copy commands with one click, and check off each step as you go.</p>
+  <div class="estimated">
+    <div class="dot"></div>
+    Estimated time: 5–10 minutes
+  </div>
+</div>
+
+<!-- Steps nav -->
+<div class="steps-nav" id="stepsNav"></div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- STEP 1: Install Node.js -->
+  <div class="step-card active" id="step-1">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(79,195,247,.2),rgba(79,195,247,.05));color:var(--blue)">1</div>
+      <div>
+        <div class="step-card-title">Install Node.js</div>
+        <div class="step-card-sub">Node.js lets your computer run the backend server. You only need to do this once.</div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-bar">
+        <div class="mockup-dot" style="background:#ff5f57"></div>
+        <div class="mockup-dot" style="background:#ffbd2e"></div>
+        <div class="mockup-dot" style="background:#28c840"></div>
+        <div class="mockup-url">🌐 nodejs.org</div>
+      </div>
+      <div class="mockup-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px">
+        <div style="font-family:var(--display);font-size:22px;font-weight:800;margin-bottom:20px">Download Node.js</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+          <div style="background:linear-gradient(135deg,#417e38,#2d5e26);color:white;padding:14px 28px;border-radius:12px;text-align:center;cursor:pointer;min-width:160px">
+            <div style="font-weight:800;font-size:16px">⬇ LTS</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px">Recommended</div>
+            <div style="font-size:11px;opacity:.7;margin-top:2px">v20.x.x</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border2);color:var(--muted);padding:14px 28px;border-radius:12px;text-align:center;min-width:160px">
+            <div style="font-weight:800;font-size:16px">Current</div>
+            <div style="font-size:11px;margin-top:4px">Latest features</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:var(--muted)">👆 Click the green LTS button</div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <div class="instruction">
+        <div class="inst-num">1</div>
+        <div class="inst-content">
+          <div class="inst-title">Go to nodejs.org</div>
+          <div class="inst-desc">Open your browser and visit <strong style="color:var(--blue)">nodejs.org</strong></div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">2</div>
+        <div class="inst-content">
+          <div class="inst-title">Click the green LTS button</div>
+          <div class="inst-desc">Download the installer file to your computer</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">3</div>
+        <div class="inst-content">
+          <div class="inst-title">Run the installer</div>
+          <div class="inst-desc">Open the downloaded file, keep clicking <strong>Next / Continue</strong> until done</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">4</div>
+        <div class="inst-content">
+          <div class="inst-title">Verify it worked</div>
+          <div class="inst-desc">Open Terminal (Mac) or Command Prompt (Windows) and run:</div>
+          <span class="inst-code">node --version</span>
+          <div class="inst-desc" style="margin-top:6px">You should see something like <span style="color:var(--green);font-family:var(--mono)">v20.11.0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip tip-info" style="margin-top:0">
+      <span class="tip-icon">💡</span>
+      <div class="tip-text"><strong>Already have Node.js?</strong> Skip this step! Run <code style="font-family:var(--mono);color:var(--blue)">node --version</code> — if you see a version number you're good to go.</div>
+    </div>
+
+    <div class="nav-btns">
+      <div></div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 1 of 8</span>
+        <button class="btn-next" onclick="goTo(2)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Download project -->
+  <div class="step-card" id="step-2">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(156,140,252,.2),rgba(156,140,252,.05));color:var(--purple)">2</div>
+      <div>
+        <div class="step-card-title">Download & Unzip</div>
+        <div class="step-card-sub">Get the project files onto your computer.</div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-bar">
+        <div class="mockup-dot" style="background:#ff5f57"></div>
+        <div class="mockup-dot" style="background:#ffbd2e"></div>
+        <div class="mockup-dot" style="background:#28c840"></div>
+        <div class="mockup-url">📁 Downloads</div>
+      </div>
+      <div class="mockup-body" style="padding:16px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.15);border-radius:8px">
+            <span style="font-size:20px">📦</span>
+            <div>
+              <div style="font-size:13px;font-weight:600">job-agent-real.zip</div>
+              <div style="font-size:11px;color:var(--muted)">ZIP Archive · ~50 KB</div>
+            </div>
+            <div style="margin-left:auto;font-size:11px;color:var(--blue);font-family:var(--mono)">Double-click ↓</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(67,224,151,.04);border:1px solid rgba(67,224,151,.1);border-radius:8px">
+            <span style="font-size:20px">📁</span>
+            <div>
+              <div style="font-size:13px;font-weight:600">job-agent-real/</div>
+              <div style="font-size:11px;color:var(--muted)">server.js · package.json · .env · job-agent.html</div>
+            </div>
+            <div style="margin-left:auto;font-size:11px;color:var(--green);font-family:var(--mono)">✓ Extracted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <div class="instruction">
+        <div class="inst-num">1</div>
+        <div class="inst-content">
+          <div class="inst-title">Find the downloaded file</div>
+          <div class="inst-desc">Go to your <strong>Downloads</strong> folder and find <span class="inst-code">job-agent-real.zip</span></div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">2</div>
+        <div class="inst-content">
+          <div class="inst-title">Unzip it</div>
+          <div class="inst-desc"><strong>Mac:</strong> Double-click the zip file<br/><strong>Windows:</strong> Right-click → "Extract All" → click Extract</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">3</div>
+        <div class="inst-content">
+          <div class="inst-title">You'll see a folder called <span class="inst-code">job-agent-real</span></div>
+          <div class="inst-desc">Inside it: server.js, package.json, .env, job-agent.html</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(1)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 2 of 8</span>
+        <button class="btn-next" onclick="goTo(3)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Get API key -->
+  <div class="step-card" id="step-3">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(255,209,102,.2),rgba(255,209,102,.05));color:var(--yellow)">3</div>
+      <div>
+        <div class="step-card-title">Get Your Anthropic API Key</div>
+        <div class="step-card-sub">This key lets the app use Claude AI to parse your resume and write cover letters.</div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-bar">
+        <div class="mockup-dot" style="background:#ff5f57"></div>
+        <div class="mockup-dot" style="background:#ffbd2e"></div>
+        <div class="mockup-dot" style="background:#28c840"></div>
+        <div class="mockup-url">🔐 console.anthropic.com</div>
+      </div>
+      <div class="mockup-body" style="padding:20px">
+        <div style="display:flex;gap:12px">
+          <div style="width:160px;flex-shrink:0">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">SIDEBAR</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="padding:7px 10px;border-radius:7px;font-size:12px;color:var(--muted)">Dashboard</div>
+              <div style="padding:7px 10px;border-radius:7px;font-size:12px;color:var(--muted)">Workspaces</div>
+              <div style="padding:7px 10px;border-radius:7px;font-size:12px;background:rgba(79,195,247,.1);color:var(--blue);font-weight:600">🔑 API Keys</div>
+              <div style="padding:7px 10px;border-radius:7px;font-size:12px;color:var(--muted)">Billing</div>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px">API Keys</div>
+            <div style="background:rgba(67,224,151,.06);border:1px solid rgba(67,224,151,.15);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Your API Key</div>
+              <div style="font-family:var(--mono);font-size:12px;color:var(--green)">sk-ant-api03-••••••••••••••••••••••</div>
+            </div>
+            <div style="background:var(--blue);color:#07080f;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;display:inline-block;cursor:pointer">+ Create Key</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <div class="instruction">
+        <div class="inst-num">1</div>
+        <div class="inst-content">
+          <div class="inst-title">Go to console.anthropic.com</div>
+          <div class="inst-desc">Sign in or create a free account</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">2</div>
+        <div class="inst-content">
+          <div class="inst-title">Click "API Keys" in the left sidebar</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">3</div>
+        <div class="inst-content">
+          <div class="inst-title">Click "+ Create Key"</div>
+          <div class="inst-desc">Give it any name like "job-agent"</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">4</div>
+        <div class="inst-content">
+          <div class="inst-title">Copy the key immediately</div>
+          <div class="inst-desc">It looks like <span style="font-family:var(--mono);color:var(--blue);font-size:12px">sk-ant-api03-xxxxx...</span> — you won't be able to see it again!</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip tip-warn">
+      <span class="tip-icon">⚠️</span>
+      <div class="tip-text"><strong>Important:</strong> Copy the key right after creating it. Once you close the dialog, Anthropic won't show it again.</div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(2)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 3 of 8</span>
+        <button class="btn-next" onclick="goTo(4)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Edit .env -->
+  <div class="step-card" id="step-4">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(255,154,60,.2),rgba(255,154,60,.05));color:var(--orange)">4</div>
+      <div>
+        <div class="step-card-title">Add Your API Key to .env</div>
+        <div class="step-card-sub">Paste your key into the config file so the server can use it.</div>
+      </div>
+    </div>
+
+    <div class="os-tabs" style="margin-top:20px">
+      <button class="os-tab active" onclick="switchOS('mac',this)">🍎 Mac</button>
+      <button class="os-tab" onclick="switchOS('win',this)">🪟 Windows</button>
+    </div>
+
+    <div class="os-content active" id="os-mac">
+      <div class="tip tip-info" style="margin-top:0">
+        <span class="tip-icon">💡</span>
+        <div class="tip-text">The <strong>.env</strong> file is hidden by default on Mac. Press <strong style="color:var(--blue)">Cmd + Shift + .</strong> inside the folder to reveal hidden files.</div>
+      </div>
+    </div>
+    <div class="os-content" id="os-win">
+      <div class="tip tip-info" style="margin-top:0">
+        <span class="tip-icon">💡</span>
+        <div class="tip-text">In File Explorer: click <strong>View</strong> tab at top → check <strong style="color:var(--blue)">"Hidden items"</strong> checkbox to see the .env file.</div>
+      </div>
+    </div>
+
+    <div class="file-editor">
+      <div class="file-tab">
+        <div class="file-dot"></div>
+        .env
+      </div>
+      <div class="file-body">
+        <div><span class="f-comment"># Required — paste your key below</span></div>
+        <div><span class="f-key">ANTHROPIC_API_KEY</span>=<span class="f-val f-highlight">sk-ant-api03-your-actual-key-here</span></div>
+        <div style="margin-top:8px"><span class="f-comment"># Optional — for real Indeed results</span></div>
+        <div><span class="f-key">SERPAPI_KEY</span>=<span class="f-val-empty">your_serpapi_key_here</span></div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <div class="instruction">
+        <div class="inst-num">1</div>
+        <div class="inst-content">
+          <div class="inst-title">Open the <span class="inst-code">job-agent-real</span> folder</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">2</div>
+        <div class="inst-content">
+          <div class="inst-title">Show hidden files (see tip above)</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">3</div>
+        <div class="inst-content">
+          <div class="inst-title">Open <span class="inst-code">.env</span> with any text editor</div>
+          <div class="inst-desc">Notepad (Windows) or TextEdit (Mac) both work fine</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">4</div>
+        <div class="inst-content">
+          <div class="inst-title">Replace the placeholder with your real key</div>
+          <div class="inst-desc">Delete <code style="font-family:var(--mono);color:var(--red)">your_anthropic_key_here</code> and paste your key</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">5</div>
+        <div class="inst-content">
+          <div class="inst-title">Save the file</div>
+          <div class="inst-desc"><strong>Mac:</strong> Cmd+S &nbsp;&nbsp; <strong>Windows:</strong> Ctrl+S</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(3)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 4 of 8</span>
+        <button class="btn-next" onclick="goTo(5)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Open Terminal -->
+  <div class="step-card" id="step-5">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(67,224,151,.2),rgba(67,224,151,.05));color:var(--green)">5</div>
+      <div>
+        <div class="step-card-title">Open Terminal in the Folder</div>
+        <div class="step-card-sub">You need a terminal window pointed at the job-agent-real folder.</div>
+      </div>
+    </div>
+
+    <div class="os-tabs" style="margin-top:20px">
+      <button class="os-tab active" onclick="switchOS2('mac2',this)">🍎 Mac</button>
+      <button class="os-tab" onclick="switchOS2('win2',this)">🪟 Windows</button>
+    </div>
+
+    <div class="os-content active" id="os-mac2">
+      <div class="mockup" style="margin-top:0">
+        <div class="mockup-bar">
+          <div class="mockup-dot" style="background:#ff5f57"></div>
+          <div class="mockup-dot" style="background:#ffbd2e"></div>
+          <div class="mockup-dot" style="background:#28c840"></div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:8px">Finder</div>
+        </div>
+        <div class="mockup-body" style="padding:16px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.15);border-radius:8px">
+            <span style="font-size:18px">📁</span>
+            <span style="font-size:13px">job-agent-real</span>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center">
+            Right-click on the folder →<br/>
+            <strong style="color:var(--blue)">"New Terminal at Folder"</strong>
+          </div>
+        </div>
+      </div>
+      <div class="instructions" style="padding-top:0">
+        <div class="instruction">
+          <div class="inst-num">1</div>
+          <div class="inst-content"><div class="inst-title">Open Finder and go to the <span class="inst-code">job-agent-real</span> folder</div></div>
+        </div>
+        <div class="instruction">
+          <div class="inst-num">2</div>
+          <div class="inst-content">
+            <div class="inst-title">Right-click inside the folder</div>
+            <div class="inst-desc">Click <strong>"New Terminal at Folder"</strong></div>
+          </div>
+        </div>
+        <div class="instruction">
+          <div class="inst-num">3</div>
+          <div class="inst-content"><div class="inst-title">A black Terminal window opens ✓</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="os-content" id="os-win2">
+      <div class="instructions" style="padding-top:0">
+        <div class="instruction">
+          <div class="inst-num">1</div>
+          <div class="inst-content"><div class="inst-title">Open the <span class="inst-code">job-agent-real</span> folder in File Explorer</div></div>
+        </div>
+        <div class="instruction">
+          <div class="inst-num">2</div>
+          <div class="inst-content">
+            <div class="inst-title">Click the address bar at the top</div>
+            <div class="inst-desc">The path like <code style="font-family:var(--mono);color:var(--blue)">C:\Users\You\Downloads\job-agent-real</code> will be highlighted</div>
+          </div>
+        </div>
+        <div class="instruction">
+          <div class="inst-num">3</div>
+          <div class="inst-content">
+            <div class="inst-title">Type <span class="inst-code">cmd</span> and press Enter</div>
+            <div class="inst-desc">A Command Prompt window opens in that folder ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(4)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 5 of 8</span>
+        <button class="btn-next" onclick="goTo(6)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: npm install -->
+  <div class="step-card" id="step-6">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(79,195,247,.2),rgba(79,195,247,.05));color:var(--blue)">6</div>
+      <div>
+        <div class="step-card-title">Install Dependencies</div>
+        <div class="step-card-sub">Download the packages the app needs. Do this only once.</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 28px 0;font-size:13px;color:var(--muted)">Type this command in your terminal and press <strong style="color:var(--text)">Enter</strong>:</div>
+
+    <div class="cmd-box">
+      <span class="cmd-text">npm install</span>
+      <button class="copy-btn" onclick="copyCmd(this,'npm install')">Copy</button>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dots">
+          <div class="mockup-dot" style="background:#ff5f57"></div>
+          <div class="mockup-dot" style="background:#ffbd2e"></div>
+          <div class="mockup-dot" style="background:#28c840"></div>
+        </div>
+        <span class="terminal-title">Terminal — job-agent-real</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">$</span> <span class="t-cmd">npm install</span></div>
+        <div class="t-out">npm warn deprecated...</div>
+        <div class="t-out">added 127 packages in 28s</div>
+        <div class="t-out" style="margin-top:4px">▸ 42 packages are looking for funding</div>
+        <div class="t-success" style="margin-top:8px">✓ Done!</div>
+        <div><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+
+    <div class="tip tip-info">
+      <span class="tip-icon">💡</span>
+      <div class="tip-text"><strong>Lots of text scrolling?</strong> That's completely normal. npm is downloading packages. Wait until you see the <span style="color:var(--green);font-family:var(--mono)">$</span> prompt again before continuing.</div>
+    </div>
+
+    <div class="tip tip-warn">
+      <span class="tip-icon">⚠️</span>
+      <div class="tip-text"><strong>Error: "command not found"?</strong> Node.js wasn't installed correctly. Go back to Step 1 and reinstall.</div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(5)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 6 of 8</span>
+        <button class="btn-next" onclick="goTo(7)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: Start server -->
+  <div class="step-card" id="step-7">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(156,140,252,.2),rgba(156,140,252,.05));color:var(--purple)">7</div>
+      <div>
+        <div class="step-card-title">Start the Server</div>
+        <div class="step-card-sub">Launch the backend. Keep this terminal window open while using the app.</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 28px 0;font-size:13px;color:var(--muted)">In the same terminal, type this and press <strong style="color:var(--text)">Enter</strong>:</div>
+
+    <div class="cmd-box">
+      <span class="cmd-text">node server.js</span>
+      <button class="copy-btn" onclick="copyCmd(this,'node server.js')">Copy</button>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dots">
+          <div class="mockup-dot" style="background:#ff5f57"></div>
+          <div class="mockup-dot" style="background:#ffbd2e"></div>
+          <div class="mockup-dot" style="background:#28c840"></div>
+        </div>
+        <span class="terminal-title">Terminal — job-agent-real</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">$</span> <span class="t-cmd">node server.js</span></div>
+        <div style="margin-top:8px"><span class="t-success">✅ JobAgent server running at http://localhost:3001</span></div>
+        <div class="t-out">   ANTHROPIC_API_KEY: <span class="t-success">✓ set</span></div>
+        <div class="t-out">   SERPAPI_KEY:       <span class="t-warn">✗ not set (using mock jobs)</span></div>
+        <div class="t-out" style="margin-top:6px">   Open job-agent.html in your browser.</div>
+      </div>
+    </div>
+
+    <div class="tip tip-success">
+      <span class="tip-icon">✅</span>
+      <div class="tip-text"><strong>You should see the green checkmark!</strong> If ANTHROPIC_API_KEY shows ✓ set, everything is working.</div>
+    </div>
+
+    <div class="tip tip-warn">
+      <span class="tip-icon">⚠️</span>
+      <div class="tip-text"><strong>ANTHROPIC_API_KEY shows ✗ missing?</strong> Go back to Step 4 and make sure you saved the .env file correctly.</div>
+    </div>
+
+    <div class="tip tip-info">
+      <span class="tip-icon">🔒</span>
+      <div class="tip-text"><strong>Keep this terminal open!</strong> The server only runs while this window is open. Don't close it while using the app.</div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(6)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 7 of 8</span>
+        <button class="btn-next" onclick="goTo(8)">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8: Open app -->
+  <div class="step-card" id="step-8">
+    <div class="step-card-header">
+      <div class="step-number-badge" style="background:linear-gradient(135deg,rgba(67,224,151,.2),rgba(67,224,151,.05));color:var(--green)">8</div>
+      <div>
+        <div class="step-card-title">Open the App & Start Applying!</div>
+        <div class="step-card-sub">You're almost there — open the HTML file and start applying to jobs.</div>
+      </div>
+    </div>
+
+    <div class="instructions" style="padding-top:20px">
+      <div class="instruction">
+        <div class="inst-num">1</div>
+        <div class="inst-content">
+          <div class="inst-title">Go to the <span class="inst-code">job-agent-real</span> folder</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">2</div>
+        <div class="inst-content">
+          <div class="inst-title">Double-click <span class="inst-code">job-agent.html</span></div>
+          <div class="inst-desc">It opens in Chrome, Safari, or Firefox</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="inst-num">3</div>
+        <div class="inst-content">
+          <div class="inst-title">Check the top-right shows <span style="color:var(--green);font-family:var(--mono)">"Server ✓"</span></div>
+          <div class="inst-desc">Green = connected and ready to go</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-mockup">
+      <div class="app-header-mock">
+        <div class="app-logo-mock">
+          <div class="app-badge-mock">⚡</div>
+          <div>
+            <div class="app-name-mock">JobAgent</div>
+            <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">Real · Indeed + Dice · AI</div>
+          </div>
+        </div>
+        <span class="server-pill-mock">Server ✓</span>
+      </div>
+      <div class="app-body-mock">
+        <div class="upload-mock">
+          <div class="upload-mock-icon">📄</div>
+          <div class="upload-mock-title">Drag & drop your resume PDF</div>
+          <div class="upload-mock-sub">or tap to browse</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:0 28px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)">✅ Checklist — mark each step done:</div>
+      <div class="checklist" style="padding:0">
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">Node.js installed</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">Project unzipped</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">API key copied from Anthropic</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">.env file updated and saved</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">npm install completed</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">node server.js running (green ✅)</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">job-agent.html open in browser</span></div>
+        <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-label">Header shows "Server ✓" in green</span></div>
+      </div>
+    </div>
+
+    <div class="success-screen" id="successScreen" style="display:none">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">You're all set!</div>
+      <div class="success-sub">Upload your resume PDF and start applying to real jobs on Indeed and Dice.</div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-prev" onclick="goTo(7)">← Back</button>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="step-indicator">Step 8 of 8</span>
+        <button class="btn-next" style="background:linear-gradient(135deg,var(--green),var(--blue))" onclick="finish()">🎉 I'm Done!</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let current = 1;
+const total = 8;
+
+// Build step nav
+const nav = document.getElementById('stepsNav');
+for(let i=1;i<=total;i++){
+  const item = document.createElement('div');
+  item.className='step-nav-item';
+  item.innerHTML=`<div class="step-dot" id="sdot-${i}" onclick="goTo(${i})">${i}</div>${i<total?'<div class="step-connector" id="scon-'+i+'"></div>':''}`;
+  nav.appendChild(item);
+}
+
+function goTo(n){
+  // Hide current
+  document.getElementById(`step-${current}`)?.classList.remove('active');
+  current=n;
+  // Show new
+  document.getElementById(`step-${current}`)?.classList.add('active');
+  updateNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateNav(){
+  for(let i=1;i<=total;i++){
+    const dot=document.getElementById(`sdot-${i}`);
+    const con=document.getElementById(`scon-${i}`);
+    dot.className='step-dot'+(i<current?' done':i===current?' active':'');
+    if(con) con.className='step-connector'+(i<current?' done':'');
+  }
+  const pct=((current-1)/(total-1))*100;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressText').textContent=`Step ${current} of ${total}`;
+}
+
+function copyCmd(btn,cmd){
+  navigator.clipboard.writeText(cmd).then(()=>{
+    btn.textContent='Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);
+  });
+}
+
+function switchOS(id,btn){
+  document.querySelectorAll('#step-4 .os-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#step-4 .os-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('os-'+id).classList.add('active');
+}
+
+function switchOS2(id,btn){
+  document.querySelectorAll('#step-5 .os-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#step-5 .os-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('os-'+id).classList.add('active');
+}
+
+function toggleCheck(el){
+  el.classList.toggle('checked');
+  el.querySelector('.check-box').textContent=el.classList.contains('checked')?'✓':'';
+  const all=document.querySelectorAll('.check-item');
+  const done=[...all].filter(i=>i.classList.contains('checked')).length;
+  if(done===all.length) document.getElementById('successScreen').style.display='block';
+  else document.getElementById('successScreen').style.display='none';
+}
+
+function finish(){
+  document.getElementById('successScreen').style.display='block';
+  document.getElementById('successScreen').scrollIntoView({behavior:'smooth'});
+}
+
+updateNav();
+</script>
+</body>
+</html>
